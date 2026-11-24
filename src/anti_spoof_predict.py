@@ -65,17 +65,12 @@ class AntiSpoofPredict(Detection):
 
         # load model weight
         state_dict = torch.load(model_path, map_location=self.device)
-        keys = iter(state_dict)
-        first_layer_name = keys.__next__()
-        if first_layer_name.find('module.') >= 0:
-            from collections import OrderedDict
-            new_state_dict = OrderedDict()
-            for key, value in state_dict.items():
-                name_key = key[7:]
-                new_state_dict[name_key] = value
-            self.model.load_state_dict(new_state_dict)
-        else:
-            self.model.load_state_dict(state_dict)
+        # strip DataParallel's 'module.' prefix
+        state_dict = {k[7:] if k.startswith('module.') else k: v for k, v in state_dict.items()}
+        # checkpoints from train.py hold the whole MultiFTNet: keep only its 'model.' classifier, drop FTGenerator
+        if any(k.startswith('model.') for k in state_dict):
+            state_dict = {k[6:]: v for k, v in state_dict.items() if k.startswith('model.')}
+        self.model.load_state_dict(state_dict)
         return None
 
     def predict(self, img, model_path):
