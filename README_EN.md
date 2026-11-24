@@ -57,7 +57,7 @@ Open source for Android platform deployment code: https://github.com/minivision-
 ## Repo
 ### Install dependency Library  
 ```
-pip install -r requirements.txt
+uv sync                  # inference only; add `--extra train` for training
 ```
 ### Clone
 ```
@@ -94,14 +94,14 @@ cd Silent-Face-Anti-Spoofing
 ```  
 ### Train
 ```
-python train.py --device_ids 0  --patch_info your_patch
+uv run silent-face-anti-spoofing train --device_ids 0 --patch_info your_patch
 ```  
 ### Test
  ./resources/anti_spoof_models Fusion model of in living detection  
  ./resources/detection_model Detector  
  ./images/sample Test Images  
  ```
- python test.py --image_name your_image_name
+ uv run silent-face-anti-spoofing predict ./images/sample/your_image_name --output result.jpg
  ```    
 ## Reference 
 - Detector [RetinaFace](https://github.com/deepinsight/insightface/tree/master/RetinaFace)  

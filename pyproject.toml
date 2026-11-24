@@ -1,0 +1,30 @@
+[project]
+name = "silent-face-anti-spoofing"
+version = "0.1.0"
+description = "Passive (silent) face liveness detection with MiniFASNet"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "opencv-python<5",  # 5.x dropped cv2.dnn.readNetFromCaffe, which the face detector needs
+    "pillow",
+    "torch",
+]
+
+[project.optional-dependencies]
+train = [
+    "easydict",
+    "tensorboardx",
+    "torchvision",
+    "tqdm",
+]
+
+[dependency-groups]
+dev = ["pytest"]
+
+[project.scripts]
+silent-face-anti-spoofing = "silent_face_anti_spoofing:main"
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"

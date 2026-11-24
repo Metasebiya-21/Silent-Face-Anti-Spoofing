@@ -6,8 +6,8 @@
 # @Software : PyCharm
 
 from torch.utils.data import DataLoader
-from src.data_io.dataset_folder import DatasetFolderFT
-from src.data_io import transform as trans
+from silent_face_anti_spoofing.training.dataset import DatasetFolderFT
+from silent_face_anti_spoofing import transform as trans
 
 
 def get_train_loader(conf):
