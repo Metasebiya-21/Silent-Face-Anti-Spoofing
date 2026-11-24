@@ -142,5 +142,7 @@ class TrainMain:
 
     def _save_state(self, time_stamp, extra=None):
         save_path = self.conf.model_path
+        # name must match parse_model_name: {scale}_..._{h}x{w}_{model_type}.pth (extra is already the folder name)
+        scale, hw = self.conf.patch_info.rsplit('_', 1)
         torch.save(self.model.state_dict(), save_path + '/' +
-                   ('{}_{}_model_iter-{}.pth'.format(time_stamp, extra, self.step)))
+                   ('{}_{}-iter-{}_{}_MiniFASNetV2SE.pth'.format(scale, time_stamp, self.step, hw)))
