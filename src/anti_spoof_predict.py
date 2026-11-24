@@ -55,6 +55,7 @@ class AntiSpoofPredict(Detection):
         super(AntiSpoofPredict, self).__init__()
         self.device = torch.device("cuda:{}".format(device_id)
                                    if torch.cuda.is_available() else "cpu")
+        self.models = {}
 
     def _load_model(self, model_path):
         # define model
@@ -84,10 +85,12 @@ class AntiSpoofPredict(Detection):
         ])
         img = test_transform(img)
         img = img.unsqueeze(0).to(self.device)
-        self._load_model(model_path)
-        self.model.eval()
+        if model_path not in self.models:  # load each model from disk once, not on every frame
+            self._load_model(model_path)
+            self.model.eval()
+            self.models[model_path] = self.model
         with torch.no_grad():
-            result = self.model.forward(img)
+            result = self.models[model_path].forward(img)
             result = F.softmax(result).cpu().numpy()
         return result
 
