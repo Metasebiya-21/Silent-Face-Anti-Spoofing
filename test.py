@@ -39,6 +39,9 @@ def test(image_name, model_dir, device_id):
     if result is False:
         return
     image_bbox = model_test.get_bbox(image)
+    if image_bbox is None:
+        print("No face found in image '{}'.".format(image_name))
+        return
     prediction = np.zeros((1, 3))
     test_speed = 0
     # sum the prediction from single model's result
