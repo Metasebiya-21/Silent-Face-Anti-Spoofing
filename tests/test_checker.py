@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 import torch
 
-from liveness_service import LivenessChecker
+from liveness_service.ml.checker import LivenessChecker
 from liveness_service.ml.inference.predictor import AntiSpoofModel
 from training.multiftnet import MultiFTNet
 

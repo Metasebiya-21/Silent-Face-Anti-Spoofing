@@ -1,46 +1,34 @@
-"""SSE stream of one upload's events: progress, processing, then a final result or error."""
-import asyncio
+"""SSE stream of one session: capture start, each colour just in time, then upload/analysis status and `done`."""
 import json
-from typing import Annotated
 
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header, Request
 from fastapi.responses import StreamingResponse
 
-from liveness_service.core.security import require_api_key, require_upload_id
-from liveness_service.core.settings import get_settings
-from liveness_service.schemas.inbound.events import EventStreamHeaders
+from liveness_service.core.security import bearer_token
 from liveness_service.schemas.outbound.http import error_responses
-from liveness_service.services import event_stream
 
-router = APIRouter(prefix="/v1/liveness", tags=["events"])
+router = APIRouter(prefix="/v1/liveness/sessions", tags=["events"])
 
 SSE_DOC = {200: {"content": {"text/event-stream": {}},
-                 "description": "`progress` (Progress), `processing`, then one final `result` (Result) or "
-                                "`error` (Error) from schemas/outbound/liveness.py. Each event has an `id` "
-                                "to send back as Last-Event-ID when reconnecting."}}
+                 "description": "Events in order: `capture` (Capture), `colour` (ColourStepEvent) x N, "
+                                "`upload_progress` (UploadProgress), `uploaded`, `analysing`, `done` (Done). "
+                                "Payloads: schemas/outbound/liveness.py."}}
 
 
-@router.get("/{upload_id}/events", response_class=StreamingResponse,
-            responses={**SSE_DOC, **error_responses(400, 401)})
-async def liveness_events(upload_id: str, headers: Annotated[EventStreamHeaders, Header()]):
-    require_api_key(headers.x_api_key)
-    require_upload_id(upload_id)
-    events = event_stream.get(upload_id)
-    start = 0 if headers.last_event_id is None else headers.last_event_id + 1
+@router.get("/{session_id}/events", response_class=StreamingResponse,
+            responses={**SSE_DOC, **error_responses(401, 410)})
+async def session_events(session_id: str, request: Request, authorization: str | None = Header(None)):
+    # access errors (401 / 410) raise here, before the 200 and the stream start
+    events = await request.app.state.sessions.open_events(session_id, bearer_token(authorization))
 
     async def stream():
-        i = start
-        while True:
-            while i < len(events.events):
-                name, data = events.events[i]
-                yield f"id: {i}\nevent: {name}\ndata: {json.dumps(data)}\n\n"
-                i += 1
-            if events.done:
-                return
-            try:
-                await asyncio.wait_for(events.changed.wait(), get_settings().keepalive_seconds)
-            except TimeoutError:
+        async for item in events:
+            if item is None:
                 yield ": keep-alive\n\n"
+                continue
+            name, payload = item
+            data = payload if isinstance(payload, dict) else payload.model_dump(mode="json", exclude_none=True)
+            yield f"event: {name}\ndata: {json.dumps(data)}\n\n"
 
     return StreamingResponse(stream(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

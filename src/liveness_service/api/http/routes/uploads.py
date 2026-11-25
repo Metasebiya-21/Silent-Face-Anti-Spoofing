@@ -5,7 +5,7 @@ from liveness_service.core import tusd_client
 from liveness_service.core.security import require_api_key, require_upload_id
 from liveness_service.schemas.outbound.http import error_responses
 
-router = APIRouter(prefix="/v1/liveness", tags=["uploads"])
+router = APIRouter(prefix="/v1/liveness/uploads", tags=["uploads"])
 
 
 async def _forward(request, path):
@@ -17,7 +17,7 @@ async def _forward(request, path):
 @router.post("", operation_id="tus_create", responses=error_responses(401, 502))
 @router.options("", operation_id="tus_options", responses=error_responses(401, 502))
 async def tus_create(request: Request):
-    """tus create. The Location header is /v1/liveness/{upload_id}."""
+    """tus create (the session's tus_endpoint). Location is /v1/liveness/uploads/{upload_id}."""
     return await _forward(request, "")
 
 

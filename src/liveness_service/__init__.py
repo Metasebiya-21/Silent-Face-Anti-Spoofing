@@ -1,3 +1,1 @@
-from liveness_service.ml.checker import LivenessChecker, LivenessResult, VideoLivenessResult
-
-__all__ = ["LivenessChecker", "LivenessResult", "VideoLivenessResult"]
+"""Passive face liveness service. MiniFASNet (needs the `minifasnet` extra): liveness_service.ml.checker."""

@@ -103,37 +103,41 @@ uv run liveness-train --device_ids 0 --patch_info your_patch
  ```
  uv run liveness-service predict ./images/sample/your_image_name --output result.jpg
  ```    
-### HTTP API (video liveness for the mobile app)
-The app only talks to `/v1/liveness`. Uploads are resumable ([tus](https://tus.io)) and proxied to
-[tusd](https://github.com/tus/tusd) behind the API; the verdict comes back over one SSE connection.
-Keep tusd and `/tusd/hooks` reachable only internally.
+### Liveness service (sessions + colour challenge)
+Each capture attempt is a **session**. While the phone records the customer's face, its screen shows a random
+colour sequence unique to the session; afterwards a worker checks that the face reflected exactly that sequence.
+
 ```
-uv sync --extra api
-tusd -upload-dir ./data -max-size 104857600 \
-     -hooks-http http://localhost:8000/tusd/hooks \
-     -hooks-enabled-events pre-create,post-receive,post-finish,post-terminate
-cp .env.example .env          # then edit; local runs read settings from .env
-uv run uvicorn liveness_service.api.http.app:app --host 0.0.0.0 --port 8000   # one worker
+docker compose up --build            # api :8000, worker, redis, tusd
+uv run uvicorn liveness_service.api.http.app:app --port 8000   # or locally: cp .env.example .env first
+uv run liveness-worker
 ```
-`TUSD_DATA_DIR` must be the same folder as tusd's `-upload-dir` (bind-mount it if tusd runs in Docker).
 
-Settings (`src/liveness_service/core/settings.py`) are validated at startup. On the server, set `VAULT_ADDR`,
-`VAULT_TOKEN`, `VAULT_PATH` and `PRODUCTION=true` as environment variables; the other settings are then read from
-that HashiCorp Vault KV v2 secret, keyed by lowercase name (e.g. `liveness_api_key`). In production the service
-refuses to start if Vault can't be read or `liveness_api_key` is unset.
+The app only talks to `/v1/liveness`:
+| Step | Request | |
+|---|---|---|
+| 1 | `POST /v1/liveness/sessions` (`X-API-Key`, body `{"device_id"}`) | `{session_id, token, tus_endpoint, expires_at}` |
+| 2 | `GET /v1/liveness/sessions/{id}/events` (`Authorization: Bearer <token>`) | SSE, see below |
+| 3 | show each `colour` event on screen as it arrives; start recording on `capture` | |
+| 4 | `POST /v1/liveness/sessions/{id}/display-log` | phone-clock times each colour appeared, and when recording started |
+| 5 | tus upload to `tus_endpoint`, `Upload-Metadata: session_id ..., token ...` | single use: one upload per session |
+| 6 | wait for `done` on the stream (or `GET /v1/liveness/sessions/{id}`) | `live` / `spoof` / `retry` |
 
-The app, sending `X-API-Key` on every request and using any tus client with endpoint `/v1/liveness`:
-| Request | Purpose |
-|---|---|
-| `POST /v1/liveness` | create the upload; `Location` is `/v1/liveness/{upload_id}` |
-| `GET /v1/liveness/{upload_id}/events` | SSE stream with the result; open it right after creating |
-| `PATCH /v1/liveness/{upload_id}` | upload a chunk |
-| `HEAD /v1/liveness/{upload_id}` | offset to resume from after an interruption |
+SSE events: `capture` (start recording), `colour` x N (just in time, never earlier), `upload_progress`, `uploaded`,
+`analysing`, `done` (decision only). Payload models: `src/liveness_service/schemas/outbound/liveness.py`.
+Expired or finished sessions answer `410 Gone`; a new attempt needs a new session.
 
-The stream sends `progress` (`{"offset", "size"}`), `processing` when the upload completes, then one `result`
-(`{"face_found", "is_real", "real_ratio", "frames_with_face", "frames_sampled"}`) or `error`, and closes.
-If the connection drops, reconnect with the `Last-Event-ID` header to get only the events you missed.
-`GET /health` returns `{"status": "ok"}`.
+tusd must call `POST /hooks/tus` with events `pre-create,post-receive,post-finish,post-terminate`, and share its
+upload folder with the worker (`TUSD_DATA_DIR`). Keep tusd and `/hooks/tus` internal.
+
+Every duration, threshold, palette and TTL is a setting (`src/liveness_service/core/settings.py`), from Vault in
+production (`VAULT_ADDR`/`VAULT_TOKEN`/`VAULT_PATH`, `PRODUCTION=true`) or `.env` locally. Decisions are audited
+(no media) in SQLite (`AUDIT_DB_PATH`).
+
+**Learning mode:** the colour-challenge signal processing (`ml/colour_challenge/signals.py`: chromaticity,
+expected signal, FFT cross-correlation, per-step match) is left as TODO; `uv run pytest tests/test_colour_signals.py`
+shows what to implement. Until then the worker answers `retry`.
+
 ## Reference 
 - Detector [RetinaFace](https://github.com/deepinsight/insightface/tree/master/RetinaFace)  
 

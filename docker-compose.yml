@@ -1,0 +1,49 @@
+# Local dev stack: api, worker, redis, tusd.   docker compose up --build
+# The app only talks to the api (port 8000); tusd and redis stay on the compose network.
+x-service-env: &service-env
+  REDIS_URL: redis://:${COMPOSE_REDIS_PASSWORD:-liveness-dev}@redis:6379/0
+  TUSD_URL: http://tusd:8080/files/
+  TUSD_DATA_DIR: /data
+  LIVENESS_API_KEY: ${LIVENESS_API_KEY:-change-me}
+  SESSION_SECRET: ${SESSION_SECRET:-compose-dev-only-secret}
+
+services:
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--requirepass", "${COMPOSE_REDIS_PASSWORD:-liveness-dev}"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${COMPOSE_REDIS_PASSWORD:-liveness-dev}", "--no-auth-warning", "ping"]
+      interval: 2s
+      retries: 15
+
+  api:
+    build: .
+    environment: *service-env
+    ports: ["8000:8000"]
+    volumes: ["uploads:/data:ro"]
+    depends_on:
+      redis: {condition: service_healthy}
+
+  worker:
+    build: .
+    command: ["liveness-worker"]
+    environment:
+      <<: *service-env
+      AUDIT_DB_PATH: /app/var/audit.sqlite3
+    volumes: ["uploads:/data:ro", "audit:/app/var"]
+    depends_on:
+      redis: {condition: service_healthy}
+
+  tusd:
+    image: tusproject/tusd:v2.10.3
+    command:
+      - -upload-dir=/srv/tusd-data/data
+      - -max-size=104857600
+      - -hooks-http=http://api:8000/hooks/tus
+      - -hooks-enabled-events=pre-create,post-receive,post-finish,post-terminate
+    volumes: ["uploads:/srv/tusd-data/data"]
+    depends_on: [api]
+
+volumes:
+  uploads:   # tusd writes, api and worker read
+  audit:     # worker's SQLite audit store

@@ -1,18 +1,23 @@
 [project]
 name = "liveness-service"
 version = "0.1.0"
-description = "Passive (silent) face liveness detection with MiniFASNet"
+description = "Passive face liveness service: sessions, colour challenge, MiniFASNet"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "numpy",
-    "opencv-python<5",  # 5.x dropped cv2.dnn.readNetFromCaffe, which the face detector needs
-    "pillow",
-    "torch",
+    # headless: no GUI libs needed on servers. <5: 5.x dropped cv2.dnn.readNetFromCaffe (MiniFASNet's detector)
+    "opencv-python-headless<5",
 ]
 
 [project.optional-dependencies]
+minifasnet = [  # the MiniFASNet model (ml/checker.py, `liveness-service predict`); the API and worker don't need it
+    "pillow",
+    "torch",
+]
 train = [
+    "pillow",
+    "torch",
     "easydict",
     "tensorboardx",
     "torchvision",
@@ -23,15 +28,22 @@ api = [
     "httpx",  # proxies tus requests to tusd
     "hvac>=2.4.0",
     "pydantic-settings>=2.16.3",
+    "redis>=5",
+    "scipy>=1.18.1",  # colour-challenge verifier (worker)
     "uvicorn",
 ]
 
 [dependency-groups]
-dev = ["pytest"]
+dev = [
+    "fakeredis>=2.41.0",
+    "pytest",
+    "pytest-asyncio",
+]
 
 [project.scripts]
 liveness-service = "liveness_service.cli:main"
 liveness-train = "training.cli:main"
+liveness-worker = "liveness_service.workers.analysis_worker:main"
 
 [build-system]
 requires = ["uv_build>=0.13.5,<0.14.0"]
@@ -39,3 +51,8 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-name = ["liveness_service", "training"]  # the service, and training as its own top-level package
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = ["integration: needs `docker compose up` (run with RUN_INTEGRATION=1)"]

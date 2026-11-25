@@ -6,6 +6,7 @@ class UploadInfo(BaseModel):
     ID: str | None = None   # null on pre-create: the upload doesn't exist yet
     Size: int | None = None
     Offset: int = 0
+    MetaData: dict[str, str] = {}  # the app's tus Upload-Metadata, decoded: session_id, token
 
 
 class RequestInfo(BaseModel):

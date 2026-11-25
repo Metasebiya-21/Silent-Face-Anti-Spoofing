@@ -1,0 +1,14 @@
+.git
+.venv
+.env
+.idea
+.pytest_cache
+**/__pycache__
+data
+var
+datasets
+images
+saved_logs
+tests
+resources/anti_spoof_models
+resources/detection_model
