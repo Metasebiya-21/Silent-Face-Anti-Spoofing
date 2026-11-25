@@ -11,9 +11,9 @@ from torch.nn import CrossEntropyLoss, MSELoss
 from tqdm import tqdm
 from tensorboardX import SummaryWriter
 
-from training.utils import get_time
-from training.multiftnet import MultiFTNet
-from training.loader import get_train_loader
+from model_development.utils import get_time
+from model_development.multiftnet import MultiFTNet
+from model_development.loader import get_train_loader
 
 
 class TrainMain:
@@ -54,7 +54,7 @@ class TrainMain:
         is_first = True
         for e in range(self.start_epoch, self.conf.epochs):
             if is_first:
-                self.writer = SummaryWriter(self.conf.log_path)
+                self.writer = SummaryWriter(str(self.conf.log_path))
                 is_first = False
             print('epoch {} started'.format(e))
             print("lr: ", self.schedule_lr.get_lr())
@@ -144,5 +144,5 @@ class TrainMain:
         save_path = self.conf.model_path
         # name must match parse_model_name: {scale}_..._{h}x{w}_{model_type}.pth (extra is already the folder name)
         scale, hw = self.conf.patch_info.rsplit('_', 1)
-        torch.save(self.model.state_dict(), save_path + '/' +
-                   ('{}_{}-iter-{}_{}_MiniFASNetV2SE.pth'.format(scale, time_stamp, self.step, hw)))
+        torch.save(self.model.state_dict(),
+                   save_path / '{}_{}-iter-{}_{}_MiniFASNetV2SE.pth'.format(scale, time_stamp, self.step, hw))

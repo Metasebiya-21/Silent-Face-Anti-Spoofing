@@ -42,8 +42,8 @@ class DatasetFolderFT(datasets.ImageFolder):
         if self.transform is not None:
             try:
                 sample = self.transform(sample)
-            except Exception as err:
-                print('Error Occured: %s' % err, path)
+            except Exception as err:  # name the image; carrying on untransformed only fails later, obscurely
+                raise RuntimeError(f"augmentation failed for {path}") from err
         if self.target_transform is not None:
             target = self.target_transform(target)
         return sample, ft_sample, target

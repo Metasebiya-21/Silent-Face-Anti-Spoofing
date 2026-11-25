@@ -5,9 +5,11 @@
 # @File : dataset_loader.py
 # @Software : PyCharm
 
+from pathlib import Path
+
 from torch.utils.data import DataLoader
-from training.dataset import DatasetFolderFT
-from training.transforms import transform as trans
+from model_development.dataset import DatasetFolderFT
+from model_development.transforms import transform as trans
 
 
 def get_train_loader(conf):
@@ -21,7 +23,7 @@ def get_train_loader(conf):
         trans.RandomHorizontalFlip(),
         trans.ToTensor()
     ])
-    root_path = '{}/{}'.format(conf.train_root_path, conf.patch_info)
+    root_path = Path(conf.train_root_path) / conf.patch_info
     trainset = DatasetFolderFT(root_path, train_transform,
                                None, conf.ft_width, conf.ft_height)
     train_loader = DataLoader(
@@ -29,5 +31,5 @@ def get_train_loader(conf):
         batch_size=conf.batch_size,
         shuffle=True,
         pin_memory=True,
-        num_workers=16)
+        num_workers=conf.num_workers)
     return train_loader

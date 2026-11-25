@@ -92,10 +92,14 @@ cd Silent-Face-Anti-Spoofing
         ├── 1_80x80
         └── ...
 ```  
-### Train
-```
-uv run liveness-train --device_ids 0 --patch_info your_patch
-```  
+### Train, validate, test (notebooks)
+Model development lives in `src/model_development/` and is driven by three notebooks in
+`src/model_development/notebooks/` (open them in VS Code or Jupyter after `uv sync --extra train`):
+1. `01_train.ipynb`: train one model for one patch type; checkpoints go to `saved_logs/snapshot/`
+2. `02_validate.ipynb`: score every checkpoint on the validation split, pick the best by ACER
+3. `03_test.ipynb`: final APCER / BPCER / ACER on the test split, optional export to `resources/anti_spoof_models/`
+
+Data is split into `datasets/rgb_image/{train,val,test}/<patch_info>/{0,1,2}/` (see `datasets/README.md`).
 ### Test
  ./resources/anti_spoof_models Fusion model of in living detection  
  ./resources/detection_model Detector  
