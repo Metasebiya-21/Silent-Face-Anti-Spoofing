@@ -5,8 +5,11 @@ import numpy as np
 import pytest
 import torch
 
-from model_development.evaluation import evaluate, evaluate_checkpoints, metrics
-from model_development.multiftnet import MultiFTNet
+from tests.notebooks import training, val
+
+evaluation = val("evaluation")
+evaluate, evaluate_checkpoints, metrics = evaluation["evaluate"], evaluation["evaluate_checkpoints"], evaluation["metrics"]
+MultiFTNet = training("multiftnet")["MultiFTNet"]
 
 
 def test_metrics_counts_attacks_accepted_and_reals_rejected():

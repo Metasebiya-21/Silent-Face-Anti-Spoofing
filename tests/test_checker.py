@@ -7,7 +7,9 @@ import torch
 
 from liveness_service.ml.checker import LivenessChecker
 from liveness_service.ml.inference.predictor import AntiSpoofModel
-from model_development.multiftnet import MultiFTNet
+from tests.notebooks import training
+
+MultiFTNet = training("multiftnet")["MultiFTNet"]
 
 SAMPLES = Path(__file__).resolve().parents[1] / "images" / "sample"
 

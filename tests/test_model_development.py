@@ -2,8 +2,12 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from model_development.transforms import functional as F
-from model_development.transforms import transform as T
+from types import SimpleNamespace
+
+from tests.notebooks import training
+
+# transforms.ipynb %runs functional.ipynb, so both sets of names live in one namespace
+F = T = SimpleNamespace(**training("transforms"))
 
 
 @pytest.mark.parametrize("hue", [-0.1, -0.01, 0.0, 0.01, 0.1])

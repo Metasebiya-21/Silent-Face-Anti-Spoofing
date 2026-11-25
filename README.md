@@ -88,7 +88,7 @@ cd Silent-Face-Anti-Spoofing
         └── ...
 ```  
 ### 训练 / 验证 / 测试 (notebooks)
-见 `src/model_development/notebooks/`: `01_train.ipynb`, `02_validate.ipynb`, `03_test.ipynb`（`uv sync --extra train`）。数据目录: `datasets/rgb_image/{train,val,test}/<patch_info>/{0,1,2}/`。
+见 `src/model_development/`: `training/train.ipynb`, `val/validate.ipynb`, `test/test.ipynb`（`uv sync --extra train`）。数据目录: `datasets/rgb_image/{train,val,test}/<patch_info>/{0,1,2}/`。
 ### 测试
  ./resources/anti_spoof_models 活体检测的融合模型  
  ./resources/detection_model 检测器模型  

@@ -93,11 +93,15 @@ cd Silent-Face-Anti-Spoofing
         └── ...
 ```  
 ### Train, validate, test (notebooks)
-Model development lives in `src/model_development/` and is driven by three notebooks in
-`src/model_development/notebooks/` (open them in VS Code or Jupyter after `uv sync --extra train`):
-1. `01_train.ipynb`: train one model for one patch type; checkpoints go to `saved_logs/snapshot/`
-2. `02_validate.ipynb`: score every checkpoint on the validation split, pick the best by ACER
-3. `03_test.ipynb`: final APCER / BPCER / ACER on the test split, optional export to `resources/anti_spoof_models/`
+Model development is notebooks only, in `src/model_development/` (open them in VS Code or Jupyter after
+`uv sync --extra train`, from their own folder). Each function or class has its own cell; notebooks load each other
+with `%run`. Run these three, in order:
+1. `training/train.ipynb`: train one model for one patch type; checkpoints go to `saved_logs/snapshot/`
+2. `val/validate.ipynb`: score every checkpoint on the validation split, pick the best by ACER
+3. `test/test.ipynb`: final APCER / BPCER / ACER on the test split, optional export to `resources/anti_spoof_models/`
+
+The other notebooks hold the code they run: `training/` has `config`, `trainer`, `multiftnet`, `dataset`, `loader`,
+`transforms`, `functional`, `utils`; `val/evaluation.ipynb` has the metrics (also used by `test.ipynb`).
 
 Data is split into `datasets/rgb_image/{train,val,test}/<patch_info>/{0,1,2}/` (see `datasets/README.md`).
 ### Test

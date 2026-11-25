@@ -50,7 +50,7 @@ requires = ["uv_build>=0.13.5,<0.14.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
-module-name = ["liveness_service", "model_development"]  # the service; model training/evaluation (notebooks)
+module-name = "liveness_service"  # model_development/ is notebooks only, not part of the package
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
