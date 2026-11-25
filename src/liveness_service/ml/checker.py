@@ -7,13 +7,14 @@ import cv2
 import numpy as np
 import torch
 
-from silent_face_anti_spoofing.inference.cropper import CropImage
-from silent_face_anti_spoofing.inference.detector import FaceDetector
-from silent_face_anti_spoofing.inference.predictor import AntiSpoofModel
+from liveness_service.ml.inference.cropper import CropImage
+from liveness_service.ml.inference.detector import FaceDetector
+from liveness_service.ml.inference.predictor import AntiSpoofModel
+from liveness_service.exceptions import VideoUnreadableError
 
 # shortcut: resolves to <repo>/resources, so it only works from a source checkout / editable install;
 # pass model_dir and detector_dir explicitly (or ship weights as package data) when deploying a wheel.
-RESOURCES = Path(__file__).resolve().parents[2] / "resources"
+RESOURCES = Path(__file__).resolve().parents[3] / "resources"
 REAL_LABEL = 1
 
 
@@ -59,10 +60,10 @@ class LivenessChecker:
 
     def check_video(self, path, max_frames=10):
         """Check up to max_frames frames spread across the video. Returns VideoLivenessResult, or None if no
-        sampled frame has a face. Raises ValueError if the file can't be opened as a video."""
+        sampled frame has a face. Raises VideoUnreadableError if the file can't be opened as a video."""
         cap = cv2.VideoCapture(str(path))
         if not cap.isOpened():
-            raise ValueError("could not open video")
+            raise VideoUnreadableError("could not open video")
         total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         step = max(1, total // max_frames) if total > 0 else 5  # some containers (e.g. webm) report no count
         results, sampled, index = [], 0, 0

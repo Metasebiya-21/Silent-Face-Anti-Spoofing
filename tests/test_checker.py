@@ -5,9 +5,9 @@ import numpy as np
 import pytest
 import torch
 
-from silent_face_anti_spoofing import LivenessChecker
-from silent_face_anti_spoofing.inference.predictor import AntiSpoofModel
-from silent_face_anti_spoofing.training.multiftnet import MultiFTNet
+from liveness_service import LivenessChecker
+from liveness_service.ml.inference.predictor import AntiSpoofModel
+from training.multiftnet import MultiFTNet
 
 SAMPLES = Path(__file__).resolve().parents[1] / "images" / "sample"
 

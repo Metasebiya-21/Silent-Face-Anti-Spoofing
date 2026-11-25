@@ -89,14 +89,14 @@ cd Silent-Face-Anti-Spoofing
 ```  
 ### 训练
 ```
-uv run silent-face-anti-spoofing train --device_ids 0 --patch_info your_patch
+uv run liveness-train --device_ids 0 --patch_info your_patch
 ```  
 ### 测试
  ./resources/anti_spoof_models 活体检测的融合模型  
  ./resources/detection_model 检测器模型  
  ./images/sample 测试图片  
  ```
- uv run silent-face-anti-spoofing predict ./images/sample/your_image_name --output result.jpg
+ uv run liveness-service predict ./images/sample/your_image_name --output result.jpg
  ```      
 ## 相关资源  
 [百度网盘](https://pan.baidu.com/s/1u3BPHIEU4GmTti0G3LIDGQ)提取码：6d8q  

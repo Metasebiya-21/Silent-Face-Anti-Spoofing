@@ -249,6 +249,54 @@ wheels = [
 ]
 
 [[package]]
+name = "liveness-service"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "numpy" },
+    { name = "opencv-python" },
+    { name = "pillow" },
+    { name = "torch" },
+]
+
+[package.optional-dependencies]
+api = [
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "uvicorn" },
+]
+train = [
+    { name = "easydict" },
+    { name = "tensorboardx" },
+    { name = "torchvision" },
+    { name = "tqdm" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "easydict", marker = "extra == 'train'" },
+    { name = "fastapi", marker = "extra == 'api'" },
+    { name = "httpx", marker = "extra == 'api'" },
+    { name = "numpy" },
+    { name = "opencv-python", specifier = "<5" },
+    { name = "pillow" },
+    { name = "tensorboardx", marker = "extra == 'train'" },
+    { name = "torch" },
+    { name = "torchvision", marker = "extra == 'train'" },
+    { name = "tqdm", marker = "extra == 'train'" },
+    { name = "uvicorn", marker = "extra == 'api'" },
+]
+provides-extras = ["train", "api"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest" }]
+
+[[package]]
 name = "markupsafe"
 version = "3.0.4"
 source = { registry = "https://pypi.org/simple" }
@@ -904,54 +952,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/70/b3/c19426f783614d625
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ef/55/6dc6d6bb953bdfc52519a0059592c52b6e3b8ad51cf8256dffceb55b0610/setuptools-84.2.1-py3-none-any.whl", hash = "sha256:ca140b45d5325a9478f880e351484f62fef15f336462e449ca0c03c873d589c2", size = 876263, upload-time = "2026-10-20T19:01:35.678Z" },
 ]
-
-[[package]]
-name = "silent-face-anti-spoofing"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "numpy" },
-    { name = "opencv-python" },
-    { name = "pillow" },
-    { name = "torch" },
-]
-
-[package.optional-dependencies]
-api = [
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "uvicorn" },
-]
-train = [
-    { name = "easydict" },
-    { name = "tensorboardx" },
-    { name = "torchvision" },
-    { name = "tqdm" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "easydict", marker = "extra == 'train'" },
-    { name = "fastapi", marker = "extra == 'api'" },
-    { name = "httpx", marker = "extra == 'api'" },
-    { name = "numpy" },
-    { name = "opencv-python", specifier = "<5" },
-    { name = "pillow" },
-    { name = "tensorboardx", marker = "extra == 'train'" },
-    { name = "torch" },
-    { name = "torchvision", marker = "extra == 'train'" },
-    { name = "tqdm", marker = "extra == 'train'" },
-    { name = "uvicorn", marker = "extra == 'api'" },
-]
-provides-extras = ["train", "api"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest" }]
 
 [[package]]
 name = "starlette"

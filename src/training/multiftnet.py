@@ -6,7 +6,7 @@
 # @Software : PyCharm
 from torch import nn
 import torch.nn.functional as F
-from silent_face_anti_spoofing.models.minifasnet import MiniFASNetV2SE
+from liveness_service.ml.networks.minifasnet import MiniFASNetV2SE
 
 
 class FTGenerator(nn.Module):

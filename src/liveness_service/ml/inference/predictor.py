@@ -4,9 +4,9 @@ import os
 import torch
 import torch.nn.functional as F
 
-from silent_face_anti_spoofing.functional import to_tensor
-from silent_face_anti_spoofing.models import MODEL_MAPPING
-from silent_face_anti_spoofing.utils import get_kernel, parse_model_name
+from liveness_service.ml.transforms.functional import to_tensor
+from liveness_service.ml.networks import MODEL_MAPPING
+from liveness_service.ml.utils import get_kernel, parse_model_name
 
 
 class AntiSpoofModel:

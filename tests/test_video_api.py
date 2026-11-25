@@ -9,8 +9,8 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from silent_face_anti_spoofing.api import app
-from silent_face_anti_spoofing.api import video
+from liveness_service.api.http.app import app
+from liveness_service.services import event_stream
 
 SAMPLES = Path(__file__).resolve().parents[1] / "images" / "sample"
 
@@ -47,7 +47,7 @@ def hook(client, kind, upload_id=None, headers=None, **upload):
 
 def read_events(client, upload_id, **headers):
     deadline = time.time() + 60  # don't hang the test run if a final event never arrives
-    while not (upload_id in video.sessions and video.sessions[upload_id].done):
+    while not (upload_id in event_stream.sessions and event_stream.sessions[upload_id].done):
         assert time.time() < deadline, "no final event"
         time.sleep(0.05)
     text = client.get(f"/v1/liveness/{upload_id}/events", headers=headers).text
@@ -107,7 +107,7 @@ def test_terminated_upload_ends_stream(client):
 
 def test_forged_hook_with_path_in_id_is_ignored(client):
     hook(client, "post-finish", "../../etc/passwd")
-    assert "../../etc/passwd" not in video.sessions
+    assert "../../etc/passwd" not in event_stream.sessions
     assert client.get("/v1/liveness/..%2Fx/events").status_code in (400, 404)
 
 

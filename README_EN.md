@@ -94,14 +94,14 @@ cd Silent-Face-Anti-Spoofing
 ```  
 ### Train
 ```
-uv run silent-face-anti-spoofing train --device_ids 0 --patch_info your_patch
+uv run liveness-train --device_ids 0 --patch_info your_patch
 ```  
 ### Test
  ./resources/anti_spoof_models Fusion model of in living detection  
  ./resources/detection_model Detector  
  ./images/sample Test Images  
  ```
- uv run silent-face-anti-spoofing predict ./images/sample/your_image_name --output result.jpg
+ uv run liveness-service predict ./images/sample/your_image_name --output result.jpg
  ```    
 ### HTTP API (video liveness for the mobile app)
 The app only talks to `/v1/liveness`. Uploads are resumable ([tus](https://tus.io)) and proxied to
@@ -113,7 +113,7 @@ tusd -upload-dir ./data -max-size 104857600 \
      -hooks-http http://localhost:8000/tusd/hooks \
      -hooks-enabled-events pre-create,post-receive,post-finish,post-terminate
 LIVENESS_API_KEY=change-me TUSD_URL=http://localhost:8080/files/ TUSD_DATA_DIR=./data \
-     uv run uvicorn silent_face_anti_spoofing.api:app --host 0.0.0.0 --port 8000   # one worker
+     uv run uvicorn liveness_service.api.http.app:app --host 0.0.0.0 --port 8000   # one worker
 ```
 `TUSD_DATA_DIR` must be the same folder as tusd's `-upload-dir` (bind-mount it if tusd runs in Docker).
 

@@ -1,5 +1,5 @@
 [project]
-name = "silent-face-anti-spoofing"
+name = "liveness-service"
 version = "0.1.0"
 description = "Passive (silent) face liveness detection with MiniFASNet"
 readme = "README.md"
@@ -28,8 +28,12 @@ api = [
 dev = ["pytest"]
 
 [project.scripts]
-silent-face-anti-spoofing = "silent_face_anti_spoofing:main"
+liveness-service = "liveness_service.cli:main"
+liveness-train = "training.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.13.5,<0.14.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = ["liveness_service", "training"]  # the service, and training as its own top-level package

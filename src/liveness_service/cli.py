@@ -1,12 +1,11 @@
-"""Command line: `silent-face-anti-spoofing predict IMAGE` and `silent-face-anti-spoofing train`."""
+"""Command line: `liveness-service predict IMAGE`. Training has its own command, `liveness-train`."""
 import argparse
-import os
 import sys
 
 
 def predict(args):
     import cv2
-    from silent_face_anti_spoofing.checker import LivenessChecker
+    from liveness_service.ml.checker import LivenessChecker
 
     image = cv2.imread(args.image)
     if image is None:
@@ -27,20 +26,8 @@ def predict(args):
         cv2.imwrite(args.output, image)
 
 
-def train(args):
-    cuda_devices = [int(elem) for elem in args.device_ids]
-    os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(map(str, cuda_devices))
-    args.devices = list(range(len(cuda_devices)))
-
-    # imported here so `predict` doesn't need the training-only dependencies
-    from silent_face_anti_spoofing.training.config import get_default_config, update_config
-    from silent_face_anti_spoofing.training.trainer import TrainMain
-
-    TrainMain(update_config(args, get_default_config())).train_model()
-
-
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="silent-face-anti-spoofing", description="Silent face anti-spoofing")
+    parser = argparse.ArgumentParser(prog="liveness-service", description="Passive face liveness check")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("predict", help="check whether the face in an image is real")
@@ -49,12 +36,6 @@ def main(argv=None):
     p.add_argument("--device_id", type=int, default=0, help="which gpu id, [0/1/2/3]")
     p.add_argument("--output", help="save a copy of the image with the box and verdict drawn on it")
     p.set_defaults(func=predict)
-
-    t = sub.add_parser("train", help="train one model for one patch type")
-    t.add_argument("--device_ids", type=str, default="1", help="which gpu id, 0123")
-    t.add_argument("--patch_info", type=str, default="1_80x80",
-                   help="[org_1_80x60 / 1_80x80 / 2.7_80x80 / 4_80x80]")
-    t.set_defaults(func=train)
 
     args = parser.parse_args(argv)
     args.func(args)
