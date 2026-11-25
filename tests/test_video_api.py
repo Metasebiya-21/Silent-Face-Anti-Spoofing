@@ -1,8 +1,10 @@
 import json
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 import cv2
+import httpx
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -107,6 +109,73 @@ def test_forged_hook_with_path_in_id_is_ignored(client):
     hook(client, "post-finish", "../../etc/passwd")
     assert "../../etc/passwd" not in video.sessions
     assert client.get("/v1/liveness/..%2Fx/events").status_code in (400, 404)
+
+
+def test_health(client):
+    assert client.get("/health").json() == {"status": "ok"}
+
+
+@contextmanager
+def tusd_handler(handler):
+    """Point the app at an in-memory tusd for the duration of the block."""
+    real = app.state.tusd
+    app.state.tusd = httpx.AsyncClient(base_url="http://tusd:8080/files/", transport=httpx.MockTransport(handler))
+    try:
+        yield
+    finally:
+        app.state.tusd = real
+
+
+@pytest.fixture
+def fake_tusd(client):
+    """Replace the app's tusd client with an in-memory tusd; records what reached it."""
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        if request.method == "POST":
+            return httpx.Response(201, headers={"Location": "http://tusd:8080/files/abc123", "Tus-Resumable": "1.0.0"})
+        if request.method == "PATCH":
+            return httpx.Response(204, headers={"Upload-Offset": str(len(request.content)), "Tus-Resumable": "1.0.0"})
+        return httpx.Response(200, headers={"Upload-Offset": "5", "Upload-Length": "10", "Tus-Resumable": "1.0.0"})
+
+    with tusd_handler(handler):
+        yield seen
+
+
+def test_tus_is_proxied_under_v1_liveness(client, fake_tusd):
+    tus = {"Tus-Resumable": "1.0.0"}
+    created = client.post("/v1/liveness", headers={**tus, "Upload-Length": "10"})
+    assert created.status_code == 201
+    assert created.headers["location"] == "http://testserver/v1/liveness/abc123"  # tusd's URL never leaks
+
+    patched = client.patch("/v1/liveness/abc123", content=b"hello",
+                           headers={**tus, "Upload-Offset": "0", "Content-Type": "application/offset+octet-stream"})
+    assert patched.status_code == 204
+    assert patched.headers["upload-offset"] == "5"
+
+    resumed = client.head("/v1/liveness/abc123", headers=tus)
+    assert resumed.headers["upload-offset"] == "5"
+
+    create, patch, head = fake_tusd
+    assert (create.method, str(create.url), create.headers["upload-length"]) == ("POST", "http://tusd:8080/files/", "10")
+    assert (patch.method, str(patch.url), patch.content) == ("PATCH", "http://tusd:8080/files/abc123", b"hello")
+    assert patch.headers["upload-offset"] == "0"
+    assert head.method == "HEAD"
+
+
+def test_tus_proxy_rejects_bad_requests(client, fake_tusd, monkeypatch):
+    assert client.patch("/v1/liveness/bad.id", content=b"x").status_code == 400
+    monkeypatch.setenv("LIVENESS_API_KEY", "secret")
+    assert client.post("/v1/liveness", headers={"Upload-Length": "10"}).status_code == 401
+    assert fake_tusd == []  # nothing reached tusd
+
+
+def test_tusd_down_gives_502(client):
+    def down(request):
+        raise httpx.ConnectError("refused")
+    with tusd_handler(down):
+        assert client.post("/v1/liveness", headers={"Upload-Length": "10"}).status_code == 502
 
 
 def test_api_key_on_tus_create_and_sse(client, monkeypatch):

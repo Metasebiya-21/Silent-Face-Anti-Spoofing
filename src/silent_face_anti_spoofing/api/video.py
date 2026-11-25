@@ -1,12 +1,14 @@
-"""Video liveness over tusd uploads, with results pushed on one SSE connection per upload.
+"""Video liveness: the app only talks to /v1/liveness; uploads are proxied to tusd, results come back over SSE.
 
-Flow for a device:
-  1. Create a tus upload on tusd (send X-API-Key); the Location header gives the upload ID.
+Flow for the app (every request carries X-API-Key):
+  1. tus create: POST /v1/liveness. The Location header is /v1/liveness/{upload_id}.
   2. GET /v1/liveness/{upload_id}/events (SSE) and keep it open.
-  3. PATCH chunks to tusd, resuming as needed. The stream sends `progress`, then `processing`,
-     then one final `result` or `error`, and closes. Reconnect with Last-Event-ID to resume it.
+  3. tus PATCH /v1/liveness/{upload_id} chunks; HEAD it to get the offset to resume from.
+     The stream sends `progress`, then `processing`, then one final `result` or `error`, and closes.
+     Reconnect with Last-Event-ID to resume the stream.
 
-tusd calls POST /tusd/hooks at each stage. Keep that route reachable only from tusd (internal network).
+tusd (TUSD_URL) calls POST /tusd/hooks at each stage; after post-finish the video is checked.
+Keep tusd and /tusd/hooks reachable only internally.
 """
 import asyncio
 import json
@@ -16,7 +18,8 @@ import re
 from dataclasses import asdict
 from pathlib import Path
 
-from fastapi import APIRouter, Header, HTTPException, Request
+import httpx
+from fastapi import APIRouter, Header, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 
 from silent_face_anti_spoofing.api.auth import authorized
@@ -27,6 +30,38 @@ router = APIRouter()
 UPLOAD_ID = re.compile(r"[A-Za-z0-9_-]{1,128}")  # tusd filestore IDs are hex; this also blocks path tricks
 SESSION_TTL_SECONDS = 3600
 KEEPALIVE_SECONDS = 15
+# headers that describe one hop, not the tus request; Content-Length is kept on requests (tusd needs it on PATCH)
+HOP_BY_HOP = {"host", "connection", "keep-alive", "transfer-encoding", "te", "trailer", "upgrade",
+              "proxy-authorization", "proxy-authenticate"}
+
+
+async def proxy_to_tusd(request, path):
+    if not authorized(request.headers.get("x-api-key")):
+        raise HTTPException(401, "invalid or missing X-API-Key")
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in HOP_BY_HOP}
+    body = request.stream() if request.method in ("POST", "PATCH") else None  # stream chunks, don't buffer them
+    try:
+        r = await request.app.state.tusd.request(request.method, path, headers=headers, content=body)
+    except httpx.HTTPError:
+        log.exception("tusd request failed")
+        raise HTTPException(502, "upload server unavailable")
+    out = {k: v for k, v in r.headers.items() if k.lower() not in HOP_BY_HOP | {"content-length"}}
+    if "location" in out:  # point the app at our URL, not tusd's
+        upload_id = out["location"].rstrip("/").rsplit("/", 1)[-1]
+        out["location"] = str(request.url_for("tus_upload", upload_id=upload_id))
+    return Response(r.content, r.status_code, headers=out)
+
+
+@router.api_route("/v1/liveness", methods=["POST", "OPTIONS"])
+async def tus_create(request: Request):
+    return await proxy_to_tusd(request, "")
+
+
+@router.api_route("/v1/liveness/{upload_id}", methods=["HEAD", "PATCH", "DELETE"], name="tus_upload")
+async def tus_upload(upload_id: str, request: Request):
+    if not UPLOAD_ID.fullmatch(upload_id):
+        raise HTTPException(400, "invalid upload id")
+    return await proxy_to_tusd(request, upload_id)
 
 
 class UploadEvents:

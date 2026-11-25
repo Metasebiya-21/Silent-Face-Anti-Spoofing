@@ -103,33 +103,32 @@ uv run silent-face-anti-spoofing train --device_ids 0 --patch_info your_patch
  ```
  uv run silent-face-anti-spoofing predict ./images/sample/your_image_name --output result.jpg
  ```    
-### HTTP API (for peripheral devices)
+### HTTP API (video liveness for the mobile app)
+The app only talks to `/v1/liveness`. Uploads are resumable ([tus](https://tus.io)) and proxied to
+[tusd](https://github.com/tus/tusd) behind the API; the verdict comes back over one SSE connection.
+Keep tusd and `/tusd/hooks` reachable only internally.
 ```
 uv sync --extra api
-LIVENESS_API_KEY=change-me uv run uvicorn silent_face_anti_spoofing.api:app --host 0.0.0.0 --port 8000
-
-curl -H "X-API-Key: change-me" -F image=@frame.jpg http://localhost:8000/v1/liveness
-# {"face_found": true, "is_real": true, "score": 0.99, "label": 1, "bbox": [x, y, w, h]}
-# {"face_found": false} when no face is detected
-```
-`GET /health` returns `{"status": "ok"}`. Uploads are limited to 5 MB and 4096x4096 pixels.
-
-#### Video: resumable upload with [tusd](https://github.com/tus/tusd), result over SSE
-Run tusd next to the API, sharing its upload folder (`TUSD_DATA_DIR`, default `./data`). Keep `/tusd/hooks` reachable only by tusd.
-```
 tusd -upload-dir ./data -max-size 104857600 \
      -hooks-http http://localhost:8000/tusd/hooks \
      -hooks-enabled-events pre-create,post-receive,post-finish,post-terminate
-TUSD_DATA_DIR=./data uv run uvicorn silent_face_anti_spoofing.api:app --port 8000   # one worker
+LIVENESS_API_KEY=change-me TUSD_URL=http://localhost:8080/files/ TUSD_DATA_DIR=./data \
+     uv run uvicorn silent_face_anti_spoofing.api:app --host 0.0.0.0 --port 8000   # one worker
 ```
-The device:
-1. Creates the upload on tusd with any tus client, sending `X-API-Key`. The upload ID is the last part of the returned `Location`.
-2. Opens `GET /v1/liveness/{upload_id}/events` (SSE, same `X-API-Key`) and keeps it open.
-3. Uploads chunks to tusd, resuming after interruptions as tus allows.
+`TUSD_DATA_DIR` must be the same folder as tusd's `-upload-dir` (bind-mount it if tusd runs in Docker).
 
-The stream sends `progress` events (`{"offset", "size"}`), `processing` when the upload completes, then one `result`
+The app, sending `X-API-Key` on every request and using any tus client with endpoint `/v1/liveness`:
+| Request | Purpose |
+|---|---|
+| `POST /v1/liveness` | create the upload; `Location` is `/v1/liveness/{upload_id}` |
+| `GET /v1/liveness/{upload_id}/events` | SSE stream with the result; open it right after creating |
+| `PATCH /v1/liveness/{upload_id}` | upload a chunk |
+| `HEAD /v1/liveness/{upload_id}` | offset to resume from after an interruption |
+
+The stream sends `progress` (`{"offset", "size"}`), `processing` when the upload completes, then one `result`
 (`{"face_found", "is_real", "real_ratio", "frames_with_face", "frames_sampled"}`) or `error`, and closes.
 If the connection drops, reconnect with the `Last-Event-ID` header to get only the events you missed.
+`GET /health` returns `{"status": "ok"}`.
 ## Reference 
 - Detector [RetinaFace](https://github.com/deepinsight/insightface/tree/master/RetinaFace)  
 

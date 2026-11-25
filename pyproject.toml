@@ -20,12 +20,12 @@ train = [
 ]
 api = [
     "fastapi",
-    "python-multipart",  # FastAPI needs it to parse file uploads
+    "httpx",  # proxies tus requests to tusd
     "uvicorn",
 ]
 
 [dependency-groups]
-dev = ["httpx", "pytest"]  # httpx: FastAPI's TestClient
+dev = ["pytest"]
 
 [project.scripts]
 silent-face-anti-spoofing = "silent_face_anti_spoofing:main"

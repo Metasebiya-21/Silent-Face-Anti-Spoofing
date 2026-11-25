@@ -897,15 +897,6 @@ wheels = [
 ]
 
 [[package]]
-name = "python-multipart"
-version = "0.0.34"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7e/c0/c753d487a83d873f6946cee6cbc26cea3fe59a476ad0de99a14938a2fbd8/python_multipart-0.0.34.tar.gz", hash = "sha256:b998ae90ca6e1e363261ce2e0e230281b8af53867b757970abd69ee9edcd843a", size = 52456, upload-time = "2026-11-16T10:40:38.261Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f5/0e/090c52b122d8ec5fa37942c1410fea9cf04ce98bca0c84dde7f0aa11594d/python_multipart-0.0.34-py3-none-any.whl", hash = "sha256:ebacd224bd686eee2f9aa1066a657affe07435a185834e05e5235e2e59173e91", size = 32585, upload-time = "2026-11-16T10:40:37.119Z" },
-]
-
-[[package]]
 name = "setuptools"
 version = "84.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -928,7 +919,7 @@ dependencies = [
 [package.optional-dependencies]
 api = [
     { name = "fastapi" },
-    { name = "python-multipart" },
+    { name = "httpx" },
     { name = "uvicorn" },
 ]
 train = [
@@ -940,7 +931,6 @@ train = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "pytest" },
 ]
 
@@ -948,10 +938,10 @@ dev = [
 requires-dist = [
     { name = "easydict", marker = "extra == 'train'" },
     { name = "fastapi", marker = "extra == 'api'" },
+    { name = "httpx", marker = "extra == 'api'" },
     { name = "numpy" },
     { name = "opencv-python", specifier = "<5" },
     { name = "pillow" },
-    { name = "python-multipart", marker = "extra == 'api'" },
     { name = "tensorboardx", marker = "extra == 'train'" },
     { name = "torch" },
     { name = "torchvision", marker = "extra == 'train'" },
@@ -961,10 +951,7 @@ requires-dist = [
 provides-extras = ["train", "api"]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "httpx" },
-    { name = "pytest" },
-]
+dev = [{ name = "pytest" }]
 
 [[package]]
 name = "starlette"
