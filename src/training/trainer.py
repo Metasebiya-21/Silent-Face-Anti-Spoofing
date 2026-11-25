@@ -11,7 +11,7 @@ from torch.nn import CrossEntropyLoss, MSELoss
 from tqdm import tqdm
 from tensorboardX import SummaryWriter
 
-from liveness_service.ml.utils import get_time
+from training.utils import get_time
 from training.multiftnet import MultiFTNet
 from training.loader import get_train_loader
 

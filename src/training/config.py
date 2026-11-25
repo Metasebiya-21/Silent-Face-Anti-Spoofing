@@ -12,7 +12,8 @@ default config for training
 import torch
 from datetime import datetime
 from easydict import EasyDict
-from liveness_service.ml.utils import make_if_not_exist, get_width_height, get_kernel
+from liveness_service.ml.utils import get_kernel
+from training.utils import get_width_height, make_if_not_exist
 
 
 def get_default_config():

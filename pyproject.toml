@@ -12,7 +12,6 @@ dependencies = [
 
 [project.optional-dependencies]
 minifasnet = [  # the MiniFASNet model (ml/checker.py, `liveness-service predict`); the API and worker don't need it
-    "pillow",
     "torch",
 ]
 train = [

@@ -4,7 +4,6 @@ import os
 import torch
 import torch.nn.functional as F
 
-from liveness_service.ml.transforms.functional import to_tensor
 from liveness_service.ml.networks import MODEL_MAPPING
 from liveness_service.ml.utils import get_kernel, parse_model_name
 
@@ -27,6 +26,7 @@ class AntiSpoofModel:
 
     def predict(self, patch):
         """patch: BGR uint8 image of size (self.height, self.width). Returns 3 class probabilities; class 1 = real."""
-        x = to_tensor(patch).unsqueeze(0).to(self.device)  # pixels stay 0-255 BGR, matching training
+        # HxWxC -> CxHxW. Pixels stay 0-255 BGR, as in training (its ToTensor has the /255 removed).
+        x = torch.from_numpy(patch.transpose(2, 0, 1)).float().unsqueeze(0).to(self.device)
         with torch.no_grad():
             return F.softmax(self.model(x), dim=1)[0].cpu().numpy()

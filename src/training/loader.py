@@ -7,7 +7,7 @@
 
 from torch.utils.data import DataLoader
 from training.dataset import DatasetFolderFT
-from liveness_service.ml.transforms import transform as trans
+from training.transforms import transform as trans
 
 
 def get_train_loader(conf):

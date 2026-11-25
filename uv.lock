@@ -424,7 +424,6 @@ api = [
     { name = "uvicorn" },
 ]
 minifasnet = [
-    { name = "pillow" },
     { name = "torch" },
 ]
 train = [
@@ -451,7 +450,6 @@ requires-dist = [
     { name = "hvac", marker = "extra == 'api'", specifier = ">=2.4.0" },
     { name = "numpy" },
     { name = "opencv-python-headless", specifier = "<5" },
-    { name = "pillow", marker = "extra == 'minifasnet'" },
     { name = "pillow", marker = "extra == 'train'" },
     { name = "pydantic-settings", marker = "extra == 'api'", specifier = ">=2.16.3" },
     { name = "redis", marker = "extra == 'api'", specifier = ">=5" },
