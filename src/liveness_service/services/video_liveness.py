@@ -3,7 +3,7 @@ import asyncio
 import logging
 from dataclasses import asdict
 
-from liveness_service.core import config
+from liveness_service.core.settings import get_settings
 from liveness_service.exceptions import VideoUnreadableError
 from liveness_service.schemas.outbound.liveness import Error, Processing, Progress, Result
 from liveness_service.services import event_stream
@@ -29,7 +29,7 @@ def upload_finished(upload_id, checker, tasks):
 
 async def _check(upload_id, checker, events):
     # path built from our config, not the hook's Storage.Path, so a forged hook can't point us at another file
-    path = config.tusd_data_dir() / upload_id
+    path = get_settings().tusd_data_dir / upload_id
     try:
         result = await asyncio.to_thread(checker.check_video, path)
     except VideoUnreadableError as err:

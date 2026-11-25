@@ -112,10 +112,15 @@ uv sync --extra api
 tusd -upload-dir ./data -max-size 104857600 \
      -hooks-http http://localhost:8000/tusd/hooks \
      -hooks-enabled-events pre-create,post-receive,post-finish,post-terminate
-LIVENESS_API_KEY=change-me TUSD_URL=http://localhost:8080/files/ TUSD_DATA_DIR=./data \
-     uv run uvicorn liveness_service.api.http.app:app --host 0.0.0.0 --port 8000   # one worker
+cp .env.example .env          # then edit; local runs read settings from .env
+uv run uvicorn liveness_service.api.http.app:app --host 0.0.0.0 --port 8000   # one worker
 ```
 `TUSD_DATA_DIR` must be the same folder as tusd's `-upload-dir` (bind-mount it if tusd runs in Docker).
+
+Settings (`src/liveness_service/core/settings.py`) are validated at startup. On the server, set `VAULT_ADDR`,
+`VAULT_TOKEN`, `VAULT_PATH` and `PRODUCTION=true` as environment variables; the other settings are then read from
+that HashiCorp Vault KV v2 secret, keyed by lowercase name (e.g. `liveness_api_key`). In production the service
+refuses to start if Vault can't be read or `liveness_api_key` is unset.
 
 The app, sending `X-API-Key` on every request and using any tus client with endpoint `/v1/liveness`:
 | Request | Purpose |

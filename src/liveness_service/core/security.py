@@ -3,14 +3,15 @@ import secrets
 
 from fastapi import HTTPException
 
-from liveness_service.core import config
+from liveness_service.core.settings import get_settings
 
 UPLOAD_ID = re.compile(r"[A-Za-z0-9_-]{1,128}")  # tusd filestore IDs are hex; this also blocks path tricks
 
 
 def authorized(api_key):
     """True if LIVENESS_API_KEY is unset (auth disabled) or api_key matches it."""
-    expected = config.api_key()
+    secret = get_settings().liveness_api_key
+    expected = secret.get_secret_value() if secret else None
     return not expected or secrets.compare_digest(api_key or "", expected)
 
 

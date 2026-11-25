@@ -17,11 +17,13 @@ from fastapi import FastAPI
 
 from liveness_service.api.http.routes import events, health, tusd_hooks, uploads
 from liveness_service.core import tusd_client
+from liveness_service.core.settings import get_settings
 from liveness_service.ml.checker import LivenessChecker
 
 
 @asynccontextmanager
 async def lifespan(app):
+    get_settings()  # fail at startup, not on the first request, if settings or Vault are wrong
     app.state.checker = LivenessChecker()  # load models once per worker, not per request
     app.state.tasks = set()                # running video checks
     app.state.tusd = tusd_client.create_client()

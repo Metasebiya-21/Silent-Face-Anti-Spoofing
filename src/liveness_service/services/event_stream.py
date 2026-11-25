@@ -1,7 +1,7 @@
 """Per-upload event log that SSE clients read from. Late or reconnecting clients replay what they missed."""
 import asyncio
 
-from liveness_service.core import config
+from liveness_service.core.settings import get_settings
 
 
 class UploadEvents:
@@ -28,6 +28,6 @@ def get(upload_id):
     """The upload's event log, created on first use (the SSE client may connect before tusd's first hook)."""
     if upload_id not in sessions:
         sessions[upload_id] = UploadEvents()
-        # shortcut: sessions expire SESSION_TTL_SECONDS after creation, even if the upload is still running
-        asyncio.get_running_loop().call_later(config.SESSION_TTL_SECONDS, sessions.pop, upload_id, None)
+        # shortcut: sessions expire session_ttl_seconds after creation, even if the upload is still running
+        asyncio.get_running_loop().call_later(get_settings().session_ttl_seconds, sessions.pop, upload_id, None)
     return sessions[upload_id]

@@ -4,7 +4,7 @@ import logging
 import httpx
 from fastapi import HTTPException, Response
 
-from liveness_service.core import config
+from liveness_service.core.settings import get_settings
 
 log = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ HOP_BY_HOP = {"host", "connection", "keep-alive", "transfer-encoding", "te", "tr
 
 
 def create_client():
-    return httpx.AsyncClient(base_url=config.tusd_url(), timeout=httpx.Timeout(30, connect=5))
+    return httpx.AsyncClient(base_url=str(get_settings().tusd_url), timeout=httpx.Timeout(30, connect=5))
 
 
 async def forward(request, path, upload_url_for):

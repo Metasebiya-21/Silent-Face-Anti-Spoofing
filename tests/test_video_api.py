@@ -22,8 +22,8 @@ def client():
 
 
 @pytest.fixture
-def data_dir(tmp_path, monkeypatch):
-    monkeypatch.setenv("TUSD_DATA_DIR", str(tmp_path))
+def data_dir(tmp_path, setenv):
+    setenv("TUSD_DATA_DIR", str(tmp_path))
     return tmp_path
 
 
@@ -164,9 +164,9 @@ def test_tus_is_proxied_under_v1_liveness(client, fake_tusd):
     assert head.method == "HEAD"
 
 
-def test_tus_proxy_rejects_bad_requests(client, fake_tusd, monkeypatch):
+def test_tus_proxy_rejects_bad_requests(client, fake_tusd, setenv):
     assert client.patch("/v1/liveness/bad.id", content=b"x").status_code == 400
-    monkeypatch.setenv("LIVENESS_API_KEY", "secret")
+    setenv("LIVENESS_API_KEY", "secret")
     assert client.post("/v1/liveness", headers={"Upload-Length": "10"}).status_code == 401
     assert fake_tusd == []  # nothing reached tusd
 
@@ -178,9 +178,18 @@ def test_tusd_down_gives_502(client):
         assert client.post("/v1/liveness", headers={"Upload-Length": "10"}).status_code == 502
 
 
-def test_api_key_on_tus_create_and_sse(client, monkeypatch):
-    monkeypatch.setenv("LIVENESS_API_KEY", "secret")
+def test_api_key_on_tus_create_and_sse(client, setenv):
+    setenv("LIVENESS_API_KEY", "secret")
     assert hook(client, "pre-create")["RejectUpload"] is True
     assert hook(client, "pre-create", headers={"X-Api-Key": ["wrong"]})["RejectUpload"] is True
     assert hook(client, "pre-create", headers={"X-Api-Key": ["secret"]}) == {}
     assert client.get("/v1/liveness/abc/events").status_code == 401
+
+
+def test_invalid_last_event_id_is_rejected(client):
+    assert client.get("/v1/liveness/abc/events", headers={"Last-Event-ID": "-1"}).status_code == 422
+
+
+def test_openapi_documents_models(client):
+    schemas = client.get("/openapi.json").json()["components"]["schemas"]
+    assert {"HealthResponse", "ErrorResponse", "TusdHook", "TusdHookResponse"} <= schemas.keys()
