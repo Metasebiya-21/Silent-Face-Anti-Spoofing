@@ -93,8 +93,10 @@ cd Silent-Face-Anti-Spoofing
  ./resources/anti_spoof_models 活体检测的融合模型  
  ./resources/detection_model 检测器模型  
  ./images/sample 测试图片  
- ```
- uv run liveness-service predict ./images/sample/your_image_name --output result.jpg
+ ```python
+ import cv2
+ from liveness_service.ml.checker import LivenessChecker   # uv sync --extra minifasnet
+ print(LivenessChecker().check(cv2.imread("images/sample/image_T1.jpg")))  # LivenessResult(is_real=..., score=...) or None
  ```      
 ## 相关资源  
 [百度网盘](https://pan.baidu.com/s/1u3BPHIEU4GmTti0G3LIDGQ)提取码：6d8q  

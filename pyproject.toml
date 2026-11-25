@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-minifasnet = [  # the MiniFASNet model (ml/checker.py, `liveness-service predict`); the API and worker don't need it
+minifasnet = [  # the MiniFASNet model (ml/checker.py); the API and worker don't need it
     "torch",
 ]
 train = [
@@ -43,7 +43,6 @@ dev = [
 ]
 
 [project.scripts]
-liveness-service = "liveness_service.cli:main"
 liveness-worker = "liveness_service.workers.analysis_worker:main"
 
 [build-system]

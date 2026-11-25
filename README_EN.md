@@ -104,8 +104,10 @@ Data is split into `datasets/rgb_image/{train,val,test}/<patch_info>/{0,1,2}/` (
  ./resources/anti_spoof_models Fusion model of in living detection  
  ./resources/detection_model Detector  
  ./images/sample Test Images  
- ```
- uv run liveness-service predict ./images/sample/your_image_name --output result.jpg
+ ```python
+ import cv2
+ from liveness_service.ml.checker import LivenessChecker   # uv sync --extra minifasnet
+ print(LivenessChecker().check(cv2.imread("images/sample/image_T1.jpg")))  # LivenessResult(is_real=..., score=...) or None
  ```    
 ### Liveness service (sessions + colour challenge)
 Each capture attempt is a **session**. While the phone records the customer's face, its screen shows a random
