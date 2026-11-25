@@ -1,7 +1,9 @@
 """LivenessChecker: the one class a caller needs. detect face -> crop per model -> average the models' votes."""
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
+import cv2
 import numpy as np
 import torch
 
@@ -23,6 +25,14 @@ class LivenessResult:
     bbox: list        # [x, y, w, h] of the face that was checked
 
 
+@dataclass
+class VideoLivenessResult:
+    is_real: bool          # more than half of the frames with a face were judged real
+    real_ratio: float      # share of frames with a face that were judged real
+    frames_with_face: int
+    frames_sampled: int
+
+
 class LivenessChecker:
     def __init__(self, model_dir=RESOURCES / "anti_spoof_models",
                  detector_dir=RESOURCES / "detection_model", device_id=0):
@@ -32,15 +42,45 @@ class LivenessChecker:
         self.models = [AntiSpoofModel(p, device) for p in sorted(Path(model_dir).glob("*.pth"))]
         if not self.models:
             raise FileNotFoundError(f"no .pth model files in {model_dir}")
+        self._lock = threading.Lock()  # the OpenCV face detector is not thread-safe
 
     def check(self, image):
         """image: BGR uint8 array (as from cv2.imread). Returns LivenessResult, or None if no face is found."""
-        bbox = self.detector.get_bbox(image)
-        if bbox is None:
-            return None
-        probs = np.mean([
-            m.predict(self.cropper.crop(image, bbox, m.scale, m.width, m.height, crop=m.scale is not None))
-            for m in self.models
-        ], axis=0)
+        with self._lock:
+            bbox = self.detector.get_bbox(image)
+            if bbox is None:
+                return None
+            probs = np.mean([
+                m.predict(self.cropper.crop(image, bbox, m.scale, m.width, m.height, crop=m.scale is not None))
+                for m in self.models
+            ], axis=0)
         label = int(np.argmax(probs))
         return LivenessResult(is_real=label == REAL_LABEL, score=float(probs[label]), label=label, bbox=bbox)
+
+    def check_video(self, path, max_frames=10):
+        """Check up to max_frames frames spread across the video. Returns VideoLivenessResult, or None if no
+        sampled frame has a face. Raises ValueError if the file can't be opened as a video."""
+        cap = cv2.VideoCapture(str(path))
+        if not cap.isOpened():
+            raise ValueError("could not open video")
+        total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        step = max(1, total // max_frames) if total > 0 else 5  # some containers (e.g. webm) report no count
+        results, sampled, index = [], 0, 0
+        try:
+            while sampled < max_frames:
+                ok, frame = cap.read()
+                if not ok:
+                    break
+                if index % step == 0:
+                    sampled += 1
+                    results.append(self.check(frame))
+                index += 1
+        finally:
+            cap.release()
+        faces = [r for r in results if r is not None]
+        if not faces:
+            return None
+        real = sum(r.is_real for r in faces)
+        # strict majority: a tie counts as fake
+        return VideoLivenessResult(is_real=real * 2 > len(faces), real_ratio=real / len(faces),
+                                   frames_with_face=len(faces), frames_sampled=sampled)

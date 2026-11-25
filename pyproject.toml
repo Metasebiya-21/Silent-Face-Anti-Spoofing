@@ -18,9 +18,14 @@ train = [
     "torchvision",
     "tqdm",
 ]
+api = [
+    "fastapi",
+    "python-multipart",  # FastAPI needs it to parse file uploads
+    "uvicorn",
+]
 
 [dependency-groups]
-dev = ["pytest"]
+dev = ["httpx", "pytest"]  # httpx: FastAPI's TestClient
 
 [project.scripts]
 silent-face-anti-spoofing = "silent_face_anti_spoofing:main"
