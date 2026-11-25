@@ -100,8 +100,8 @@ with `%run`. Run these three, in order:
 2. `val/validate.ipynb`: score every checkpoint on the validation split, pick the best by ACER
 3. `test/test.ipynb`: final APCER / BPCER / ACER on the test split, optional export to `resources/anti_spoof_models/`
 
-The other notebooks hold the code they run: `training/` has `config`, `trainer`, `multiftnet`, `dataset`, `loader` (augmentation via torchvision),
-`utils`; `val/evaluation.ipynb` has the metrics (also used by `test.ipynb`).
+The other notebooks hold the code they run: `training/` has `config`, `data` (dataset, Fourier target, torchvision augmentation), `model` (MultiFTNet)
+and `trainer`; `val/evaluation.ipynb` has the metrics (also used by `test.ipynb`).
 
 Data is split into `datasets/rgb_image/{train,val,test}/<patch_info>/{0,1,2}/` (see `datasets/README.md`).
 ### Test

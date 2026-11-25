@@ -9,7 +9,7 @@ from tests.notebooks import training, val
 
 evaluation = val("evaluation")
 evaluate, evaluate_checkpoints, metrics = evaluation["evaluate"], evaluation["evaluate_checkpoints"], evaluation["metrics"]
-MultiFTNet = training("multiftnet")["MultiFTNet"]
+MultiFTNet = training("model")["MultiFTNet"]
 
 
 def test_metrics_counts_attacks_accepted_and_reals_rejected():

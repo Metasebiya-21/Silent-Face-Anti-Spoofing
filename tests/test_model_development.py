@@ -2,7 +2,7 @@ import numpy as np
 
 from tests.notebooks import training
 
-train_transform = training("loader")["train_transform"]
+train_transform = training("data")["train_transform"]
 
 
 def test_training_augmentation_keeps_0_255_pixels():

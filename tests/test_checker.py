@@ -9,7 +9,7 @@ from liveness_service.ml.checker import LivenessChecker
 from liveness_service.ml.inference.predictor import AntiSpoofModel
 from tests.notebooks import training
 
-MultiFTNet = training("multiftnet")["MultiFTNet"]
+MultiFTNet = training("model")["MultiFTNet"]
 
 SAMPLES = Path(__file__).resolve().parents[1] / "images" / "sample"
 
