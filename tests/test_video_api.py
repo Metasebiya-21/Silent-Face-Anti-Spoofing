@@ -89,6 +89,15 @@ def test_no_face_and_unreadable_video(client, data_dir):
     assert read_events(client, "junk")[-1][1:] == ("error", {"detail": "could not open video"})
 
 
+def test_progress_arriving_after_the_result_is_dropped(client, data_dir):
+    # seen with real tusd: post-receive hooks landed after post-finish
+    write_video(data_dir / "late", cv2.imread(str(SAMPLES / "image_T1.jpg")))
+    hook(client, "post-finish", "late")
+    read_events(client, "late")
+    hook(client, "post-receive", "late", Offset=200, Size=200)
+    assert [name for _, name, _ in read_events(client, "late")] == ["processing", "result"]
+
+
 def test_terminated_upload_ends_stream(client):
     hook(client, "post-terminate", "gone")
     assert read_events(client, "gone")[-1][1:] == ("error", {"detail": "upload terminated"})

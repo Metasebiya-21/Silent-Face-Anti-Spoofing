@@ -38,6 +38,8 @@ class UploadEvents:
         self.changed = asyncio.Event()
 
     def publish(self, event, data, final=False):
+        if self.done:  # tusd sends post-receive asynchronously; it can arrive after post-finish's result
+            return
         self.events.append((event, data))
         self.done = self.done or final
         self.changed.set()
